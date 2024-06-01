@@ -73,7 +73,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
     
     eps = 1e-10
 
-    x : Tensor = torch.zeros_like(img_shape)
+    x : Tensor = torch.zeros(img_shape)
 
     dx : Tensor = grad_x(x)
     
