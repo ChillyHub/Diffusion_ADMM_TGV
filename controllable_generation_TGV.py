@@ -21,15 +21,15 @@ def grad_x_trans(x : Tensor):
     return dx + dy + dz
 
 def grad_g(g : Tensor):
-    d1dx = torch.roll(g[..., 0], shifts=1, dims=2) - g
-    d1dy = torch.roll(g[..., 0], shifts=1, dims=3) - g
-    d1dz = torch.roll(g[..., 0], shifts=1, dims=0) - g
-    d2dx = torch.roll(g[..., 1], shifts=1, dims=2) - g
-    d2dy = torch.roll(g[..., 1], shifts=1, dims=3) - g
-    d2dz = torch.roll(g[..., 1], shifts=1, dims=0) - g
-    d3dx = torch.roll(g[..., 2], shifts=1, dims=2) - g
-    d3dy = torch.roll(g[..., 2], shifts=1, dims=3) - g
-    d3dz = torch.roll(g[..., 2], shifts=1, dims=0) - g
+    d1dx = torch.roll(g[..., 0], shifts=1, dims=2) - g[..., 0]
+    d1dy = torch.roll(g[..., 0], shifts=1, dims=3) - g[..., 0]
+    d1dz = torch.roll(g[..., 0], shifts=1, dims=0) - g[..., 0]
+    d2dx = torch.roll(g[..., 1], shifts=1, dims=2) - g[..., 1]
+    d2dy = torch.roll(g[..., 1], shifts=1, dims=3) - g[..., 1]
+    d2dz = torch.roll(g[..., 1], shifts=1, dims=0) - g[..., 1]
+    d3dx = torch.roll(g[..., 2], shifts=1, dims=2) - g[..., 2]
+    d3dy = torch.roll(g[..., 2], shifts=1, dims=3) - g[..., 2]
+    d3dz = torch.roll(g[..., 2], shifts=1, dims=0) - g[..., 2]
     return torch.stack((d1dx, d2dy, d3dz, (d1dy + d2dx) / 2, (d1dz + d3dx) / 2, (d2dz + d3dy) / 2), dim=-1)
 
 def grad_g_trans(g : Tensor):
