@@ -44,7 +44,7 @@ python experience.py
 or set parameter self
 
 ```bash
-conda activate diffusion-mbir
+conda activate diff_tgv_env
 python generator_AAPM_3d_sparseview.py
 ```
 

@@ -2,8 +2,26 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 
+import os
+from PIL import Image
+
 import pandas as pd
 import matplotlib.pyplot as plt
+
+
+def load_recon_to_volume(root_path, recon_file_dir='recon/', volume_file_dir='volume/', volume_file_name='volume.npy'):
+    """load reconstructed volume from npy file"""
+    imgs = []
+    for name in os.listdir(root_path + recon_file_dir):
+        img = Image.open(root_path + recon_file_dir + name)
+        img = img.convert('L')
+
+        print(img.shape)
+
+        # convert shape to (z, c, x, y)
+        img = np.array(img)
+        img = np.expand_dims(img, axis=0)
+        imgs.append(img)
 
 
 def load_volume(path, reconstruct_file_name, reference_file_name):
