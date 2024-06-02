@@ -173,14 +173,14 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
 
             # g step
             EtYU = grad_g_trans(y - u_y)
-            b_cg_g = 2 * rho_0 * (grad_g(x) - z - u_z) + 2 * rho_1 * EtYU
+            b_cg_g = 2 * rho_0 * (grad_x(x) - z - u_z) + 2 * rho_1 * EtYU
             g = CG(A_cg_g, b_cg_g, g, n_inner=1)
 
             # z step
             z = z_step(grad_x(x), g, z, u_z, lam=lam, alpha_1=alpha_1, rho_0=rho_0)
 
             # y step
-            y = y_setp(grad_g(g), u_y, y, u_y, lam=lam, alpha_0=alpha_0, rho_1=rho_1)
+            y = y_setp(grad_g(g), y, u_y, lam=lam, alpha_0=alpha_0, rho_1=rho_1)
 
             # update u_z and u_y    
             u_z += z - grad_x(x) + g
