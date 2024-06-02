@@ -9,20 +9,48 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def load_recon_to_volume(root_path, recon_file_dir='recon/', volume_file_dir='volume/', volume_file_name='volume.npy'):
+def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='label/', volume_file_dir='volume/', volume_file_name='volume.npy', gt_file_name='ground_truth.npy'):
     """load reconstructed volume from npy file"""
     imgs = []
+    names = []
     for name in os.listdir(root_path + recon_file_dir):
-        img = Image.open(root_path + recon_file_dir + name)
-        img = img.convert('L')
+        try:
+            img = Image.open(root_path + recon_file_dir + name)
+            names.append(name)
+        except:
+            continue
 
-        print(img.shape)
+        img = img.convert('L')
 
         # convert shape to (z, c, x, y)
         img = np.array(img)
         img = np.expand_dims(img, axis=0)
         imgs.append(img)
 
+    imgs = np.array(imgs)
+
+    labels = []
+    for name in names:
+        try:
+            label = Image.open(root_path + label_file_dir + name)
+        except:
+            continue
+
+        label = label.convert('L')
+
+        # convert shape to (z, c, x, y)
+        label = np.array(label)
+        label = np.expand_dims(label, axis=0)
+        labels.append(label)
+    
+    labels = np.array(labels)
+
+    # save volume
+    if not os.path.exists(root_path + volume_file_dir):
+        os.makedirs(root_path + volume_file_dir)
+
+    np.save(root_path + volume_file_dir + volume_file_name, imgs)
+    np.save(root_path + volume_file_dir + gt_file_name, labels)
 
 def load_volume(path, reconstruct_file_name, reference_file_name):
     """load reconstructed and reference volumes from npy files"""
@@ -30,10 +58,10 @@ def load_volume(path, reconstruct_file_name, reference_file_name):
     reference_volume = np.load(path + reference_file_name)
     return reconstructed_volume, reference_volume
 
-def calculate_metrics(slice_reconstructed, slice_reference):
+def calculate_metrics(slice_reconstructed, slice_reference, channel_axis):
     """calculate PSNR and SSIM for a single slice"""
     psnr_value = psnr(slice_reference, slice_reconstructed, data_range=slice_reference.max() - slice_reference.min())
-    ssim_value = ssim(slice_reference, slice_reconstructed, data_range=slice_reference.max() - slice_reference.min())
+    ssim_value = ssim(slice_reference, slice_reconstructed, data_range=slice_reference.max() - slice_reference.min(), channel_axis=channel_axis)
     return psnr_value, ssim_value
 
 def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
@@ -48,7 +76,7 @@ def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
     for z in range(volume_reconstructed.shape[0]):
         slice_reconstructed = volume_reconstructed[z, :, :, :]
         slice_reference = volume_reference[z, :, :, :]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference)
+        p, s = calculate_metrics(slice_reconstructed, slice_reference, 0)
         psnr_axial.append(p)
         ssim_axial.append(s)
 
@@ -56,7 +84,7 @@ def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
     for x in range(volume_reconstructed.shape[2]):
         slice_reconstructed = volume_reconstructed[:, :, x, :]
         slice_reference = volume_reference[:, :, x, :]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference)
+        p, s = calculate_metrics(slice_reconstructed, slice_reference, 1)
         psnr_coronal.append(p)
         ssim_coronal.append(s)
 
@@ -64,7 +92,7 @@ def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
     for y in range(volume_reconstructed.shape[3]):
         slice_reconstructed = volume_reconstructed[:, :, :, y]
         slice_reference = volume_reference[:, :, :, y]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference)
+        p, s = calculate_metrics(slice_reconstructed, slice_reference, 1)
         psnr_sagittal.append(p)
         ssim_sagittal.append(s)
 

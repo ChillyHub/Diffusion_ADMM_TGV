@@ -144,7 +144,8 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
                                                                     img_shape=img.shape,
                                                                     lamb_1=lam,
                                                                     rho=rho_0)
-    else:
+        
+    elif metho == 'TGV':
         pc_radon = controllable_generation_TGV.get_pc_radon_ADMM_TGV_vol(sde,
                                                                         predictor, corrector,
                                                                         inverse_scaler,
@@ -161,6 +162,26 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
                                                                         lam=lam,
                                                                         rho_0=rho_0,
                                                                         rho_1=rho_1,
+                                                                        alpha_0=alpha_0,
+                                                                        alpha_1=alpha_1)
+
+    else:
+        pc_radon = controllable_generation_TGV_old.get_pc_radon_ADMM_TGV_vol(sde,
+                                                                        predictor, corrector,
+                                                                        inverse_scaler,
+                                                                        snr=snr,
+                                                                        n_steps=n_steps,
+                                                                        probability_flow=probability_flow,
+                                                                        continuous=config.training.continuous,
+                                                                        denoise=True,
+                                                                        radon=radon,
+                                                                        save_progress=True,
+                                                                        save_root=save_root,
+                                                                        final_consistency=True,
+                                                                        img_shape=img.shape,
+                                                                        lam=lam,
+                                                                        rho_z=rho_0,
+                                                                        rho_y=rho_1,
                                                                         alpha_0=alpha_0,
                                                                         alpha_1=alpha_1)
     
@@ -195,6 +216,7 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
     np.save(str(save_root / 'sinogram' / f'original_{count}.npy'), original_sinogram)
     np.save(str(save_root / 'sinogram' / f'recon_{count}.npy'), recon_sinogram)
     np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x)
+    np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), img)
 
 
 if __name__ == '__main__':

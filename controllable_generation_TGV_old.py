@@ -19,61 +19,10 @@ from physics.ct import *
 from utils import show_samples, show_samples_gray, clear, clear_color, batchfy
 
 
-
-def _Dz(x): # 计算输入张量 x 在特定方向（看起来像是沿着批次方向）的离散导数。
-    y = torch.zeros_like(x)
-    y[:-1] = x[1:]
-    y[-1] = x[0]
-    return y - x
-
-def _DzT(x): # 计算 _Dz 操作的转置（伴随）。
-    y = torch.zeros_like(x)
-    y[:-1] = x[1:]
-    y[-1] = x[0]
-
-    tempt = -(y-x)
-    difft = tempt[:-1]
-    y[1:] = difft
-    y[0] = x[-1] - x[0]
-
-    return y
-
-def _Dx(x):  # 沿着张量的第三个维度（在图像中通常对应于高度或行）计算离散导数。
-    y = torch.zeros_like(x)
-    y[:, :, :-1, :] = x[:, :, 1:, :]
-    y[:, :, -1, :] = x[:, :, 0, :]
-    return y - x
-
-def _DxT(x):  # 计算 _Dx 的转置（伴随）操作。
-    y = torch.zeros_like(x)
-    y[:, :, :-1, :] = x[:, :, 1:, :]
-    y[:, :, -1, :] = x[:, :, 0, :]
-    tempt = -(y - x)
-    difft = tempt[:, :, :-1, :]
-    y[:, :, 1:, :] = difft
-    y[:, :, 0, :] = x[:, :, -1, :] - x[:, :, 0, :]
-    return y
-
-def _Dy(x):  # 沿着张量的第四个维度（在图像中通常对应于宽度或列）计算离散导数。
-    y = torch.zeros_like(x)
-    y[:, :, :, :-1] = x[:, :, :, 1:]
-    y[:, :, :, -1] = x[:, :, :, 0]
-    return y - x
-
-def _DyT(x): # 计算 _Dy 的转置（伴随）操作。
-    y = torch.zeros_like(x)
-    y[:, :, :, :-1] = x[:, :, :, 1:]
-    y[:, :, :, -1] = x[:, :, :, 0]
-    tempt = -(y - x)
-    difft = tempt[:, :, :, :-1]
-    y[:, :, :, 1:] = difft
-    y[:, :, :, 0] = x[:, :, :, -1] - x[:, :, :, 0]
-    return y
-
 def grad_op_x(x, w1=1, w2=1): #计算输入图像 x 的梯度
     # Calculate Dx1, Dx2
-    Dx1 = (np.roll(x, 1, 0) - x) / 2 * w1
-    Dx2 = (np.roll(x, 1, 1) - x) / 2 * w2
+    Dx1 = (np.roll(x, 1, 2) - x) / 2 * w1
+    Dx2 = (np.roll(x, 1, 3) - x) / 2 * w2
     # Ensure Dx1 and Dx2 are 5-dimensional
     Dx1 = Dx1[..., np.newaxis]  # Add an extra dimension
     Dx2 = Dx2[..., np.newaxis]  # Add an extra dimension
@@ -95,8 +44,8 @@ def grad_op_x_torch(x, w1=1, w2=1):  # 计算输入图像 x 的梯度
 
     
 def adj_grad_op_x(x, w1=1, w2=1): # 此函数计算 grad_op_x 的伴随操作
-    y1 = (np.roll(x[..., 0], -1, 0) - x[..., 0]) / 2 * w1
-    y2 = (np.roll(x[..., 1], -1, 1) - x[..., 1]) / 2 * w2
+    y1 = (np.roll(x[..., 0], -1, 2) - x[..., 0]) / 2 * w1
+    y2 = (np.roll(x[..., 1], -1, 3) - x[..., 1]) / 2 * w2
     return y1 + y2 # 维度不变
     
 def adj_grad_op_x_torch(x, w1=1, w2=1):
@@ -127,7 +76,7 @@ def grad_op_V_torch(V):
     D2v1 = (torch.roll(V[..., 0], shifts=1, dims=3) - V[..., 0]) / 2  # 在第四个维度上向右滚动
     D1v2 = (torch.roll(V[..., 1], shifts=1, dims=2) - V[..., 1]) / 2  # 在第三个维度上向下滚动
     # 在 PyTorch 中，使用 stack 在最后一个维度上堆叠结果
-    EV = torch.stack((D1v1, D2v2, (D1v2 + D1v2) / 2), dim=-1)
+    EV = torch.stack((D1v1, D2v2, (D2v1 + D1v2) / 2), dim=-1)
     return EV
   
   
@@ -149,7 +98,7 @@ def adj_grad_op_V_torch(V):
 
 
 
-def get_pc_radon_ADMM_TV_vol(sde, predictor, corrector, inverse_scaler, snr,
+def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
                              n_steps=1, probability_flow=False, continuous=False,
                              denoise=True, eps=1e-5, radon=None, save_progress=False, save_root=None,
                              final_consistency=False, img_shape=None, lam=0.1,
