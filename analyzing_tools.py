@@ -151,16 +151,21 @@ def plot_comparison(reconstructed_volumes, titles, ground_truth, output_file=Non
         # axial (c, x, y) -> (x, y)
         axial_slice = axial_slice[0, :, :]
         axial_gt = axial_gt[0, :, :]
-        # sagittal (z, c, y) -> (z, y) and double in dim 0
+        # sagittal (z, c, y) -> (z, y)
         sagittal_slice = sagittal_slice[:, 0, :]
         sagittal_gt = sagittal_gt[:, 0, :]
-        sagittal_slice = np.repeat(sagittal_slice, 2, axis=0)
-        sagittal_gt = np.repeat(sagittal_gt, 2, axis=0)
-        # coronal (z, c, x) -> (z, x) and double in dim 0
+        # coronal (z, c, x) -> (z, x)
         coronal_slice = coronal_slice[:, 0, :]
         coronal_gt = coronal_gt[:, 0, :]
-        coronal_slice = np.repeat(coronal_slice, 2, axis=0)
-        coronal_gt = np.repeat(coronal_gt, 2, axis=0)
+
+        # transfrom to 256x256
+        axial_slice = np.array(Image.fromarray(axial_slice).resize((256, 256)))
+        sagittal_slice = np.array(Image.fromarray(sagittal_slice).resize((256, 256)))
+        coronal_slice = np.array(Image.fromarray(coronal_slice).resize((256, 256)))
+
+        axial_gt = np.array(Image.fromarray(axial_gt).resize((256, 256)))
+        sagittal_gt = np.array(Image.fromarray(sagittal_gt).resize((256, 256)))
+        coronal_gt = np.array(Image.fromarray(coronal_gt).resize((256, 256)))
 
         slices = [axial_slice, sagittal_slice, coronal_slice]
         gts = [axial_gt, sagittal_gt, coronal_gt]
