@@ -293,10 +293,10 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
             timesteps = torch.linspace(sde.T, eps, sde.N) # linspace(1, 1e-5,1000) 返回包含 1000个元素的张量，元素从 1 到 1e-5的等间隔序列
 
             nonlocal del_z, del_v, del_y, del_Uz, del_Uy
-            Dx = grad_op_x(x)
+            Dx = grad_op_x_torch(x)
             del_v = Dx
             del_z = Dx - del_v
-            Dv = grad_op_V(del_v)
+            Dv = grad_op_V_torch(del_v)
             del_y = Dv
             del_Uz = del_z - Dx + del_v
             del_Uy = Dv - del_y
