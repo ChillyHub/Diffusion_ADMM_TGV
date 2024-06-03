@@ -291,6 +291,16 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
             ones = torch.ones_like(x).to(data.device) #与张量 x 具有相同形状的张量，其中的所有元素都被设置为 1
             norm_const = _AT(_A(ones)) # 对输入图像先 radon 变换，再逆 radon 变换
             timesteps = torch.linspace(sde.T, eps, sde.N) # linspace(1, 1e-5,1000) 返回包含 1000个元素的张量，元素从 1 到 1e-5的等间隔序列
+
+            nonlocal del_z, del_v, del_y, del_Uz, del_Uy
+            Dx = grad_op_x(x)
+            del_v = Dx
+            del_z = Dx - del_v
+            Dv = grad_op_V(del_v)
+            del_y = Dv
+            del_Uz = del_z - Dx + del_v
+            del_Uy = Dv - del_y
+            
             for i in tqdm(range(sde.N)): # tqdm用于显示循环进度条
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU 将数据划分成适合 GPU 内存的小批次

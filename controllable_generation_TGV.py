@@ -9,43 +9,43 @@ from utils import clear, batchfy
 
 
 def grad_x(x : Tensor):
-    dx = torch.roll(x, shifts=1, dims=2) - x
-    dy = torch.roll(x, shifts=1, dims=3) - x
-    dz = torch.roll(x, shifts=1, dims=0) - x
+    dx = torch.roll(x, shifts=-1, dims=2) - x
+    dy = torch.roll(x, shifts=-1, dims=3) - x
+    dz = torch.roll(x, shifts=-1, dims=0) - x
     return torch.stack((dx, dy, dz), dim=-1)
 
 def grad_x_trans(x : Tensor):
-    dx = torch.roll(x[..., 0], shifts=-1, dims=2) - x[..., 0]
-    dy = torch.roll(x[..., 1], shifts=-1, dims=3) - x[..., 1]
-    dz = torch.roll(x[..., 2], shifts=-1, dims=0) - x[..., 2]
+    dx = torch.roll(x[..., 0], shifts=1, dims=2) - x[..., 0]
+    dy = torch.roll(x[..., 1], shifts=1, dims=3) - x[..., 1]
+    dz = torch.roll(x[..., 2], shifts=1, dims=0) - x[..., 2]
     return dx + dy + dz
 
 def grad_g(g : Tensor):
-    d1dx = torch.roll(g[..., 0], shifts=1, dims=2) - g[..., 0]
-    d1dy = torch.roll(g[..., 0], shifts=1, dims=3) - g[..., 0]
-    d1dz = torch.roll(g[..., 0], shifts=1, dims=0) - g[..., 0]
-    d2dx = torch.roll(g[..., 1], shifts=1, dims=2) - g[..., 1]
-    d2dy = torch.roll(g[..., 1], shifts=1, dims=3) - g[..., 1]
-    d2dz = torch.roll(g[..., 1], shifts=1, dims=0) - g[..., 1]
-    d3dx = torch.roll(g[..., 2], shifts=1, dims=2) - g[..., 2]
-    d3dy = torch.roll(g[..., 2], shifts=1, dims=3) - g[..., 2]
-    d3dz = torch.roll(g[..., 2], shifts=1, dims=0) - g[..., 2]
+    d1dx = torch.roll(g[..., 0], shifts=-1, dims=2) - g[..., 0]
+    d1dy = torch.roll(g[..., 0], shifts=-1, dims=3) - g[..., 0]
+    d1dz = torch.roll(g[..., 0], shifts=-1, dims=0) - g[..., 0]
+    d2dx = torch.roll(g[..., 1], shifts=-1, dims=2) - g[..., 1]
+    d2dy = torch.roll(g[..., 1], shifts=-1, dims=3) - g[..., 1]
+    d2dz = torch.roll(g[..., 1], shifts=-1, dims=0) - g[..., 1]
+    d3dx = torch.roll(g[..., 2], shifts=-1, dims=2) - g[..., 2]
+    d3dy = torch.roll(g[..., 2], shifts=-1, dims=3) - g[..., 2]
+    d3dz = torch.roll(g[..., 2], shifts=-1, dims=0) - g[..., 2]
     return torch.stack((d1dx, d2dy, d3dz, (d1dy + d2dx) / 2, (d1dz + d3dx) / 2, (d2dz + d3dy) / 2), dim=-1)
 
 def grad_g_trans(g : Tensor):
     d1dx, d2dy, d3dz, d1dy_d2dx, d1dz_d3dx, d2dz_d3dy = g[..., 0], g[..., 1], g[..., 2], g[..., 3], g[..., 4], g[..., 5]
 
-    g1 = (torch.roll(d1dx, shifts=-1, dims=2) - d1dx +
-          (torch.roll(d1dy_d2dx, shifts=-1, dims=3) - d1dy_d2dx) / 2 +
-          (torch.roll(d1dz_d3dx, shifts=-1, dims=0) - d1dz_d3dx) / 2)
+    g1 = (torch.roll(d1dx, shifts=1, dims=2) - d1dx +
+          (torch.roll(d1dy_d2dx, shifts=1, dims=3) - d1dy_d2dx) / 2 +
+          (torch.roll(d1dz_d3dx, shifts=1, dims=0) - d1dz_d3dx) / 2)
 
-    g2 = (torch.roll(d2dy, shifts=-1, dims=3) - d2dy +
-          (torch.roll(d1dy_d2dx, shifts=-1, dims=2) - d1dy_d2dx) / 2 +
-          (torch.roll(d2dz_d3dy, shifts=-1, dims=0) - d2dz_d3dy) / 2)
+    g2 = (torch.roll(d2dy, shifts=1, dims=3) - d2dy +
+          (torch.roll(d1dy_d2dx, shifts=1, dims=2) - d1dy_d2dx) / 2 +
+          (torch.roll(d2dz_d3dy, shifts=1, dims=0) - d2dz_d3dy) / 2)
 
-    g3 = (torch.roll(d3dz, shifts=-1, dims=0) - d3dz +
-          (torch.roll(d1dz_d3dx, shifts=-1, dims=2) - d1dz_d3dx) / 2 +
-          (torch.roll(d2dz_d3dy, shifts=-1, dims=3) - d2dz_d3dy) / 2)
+    g3 = (torch.roll(d3dz, shifts=1, dims=0) - d3dz +
+          (torch.roll(d1dz_d3dx, shifts=1, dims=2) - d1dz_d3dx) / 2 +
+          (torch.roll(d2dz_d3dy, shifts=1, dims=3) - d2dz_d3dy) / 2)
 
     g_trans = torch.stack((g1, g2, g3), dim=-1)
 
@@ -166,6 +166,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
         y = y.to(x.device)
         u_z = u_z.to(x.device)
         u_y = u_y.to(x.device)
+
         for i in range(niter):
             # x step
             b_cg_x = ATb + 2 * rho_0 * grad_x_trans(z + g + u_z)
@@ -218,6 +219,16 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
             ones = torch.ones_like(x).to(data.device)
             norm_const = _AT(_A(ones))
             timesteps = torch.linspace(sde.T, eps, sde.N) 
+
+            nonlocal g, z, y, u_z, u_y
+            dx = grad_x(x)
+            g = dx
+            dg = grad_g(g)
+            z = dx - g
+            y = dg
+            u_z = z - dx + g
+            u_y = dg - y
+
             for i in tqdm(range(sde.N)):
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU
