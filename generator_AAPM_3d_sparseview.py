@@ -92,7 +92,7 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
         save_root = Path(f'./results/{config_name}/{problem}/{metho}/n_view{n_view}/rho0_{rho_0}-rho1_{rho_1}-lambda_{lam}-alpha0_{alpha_0}-alpha_1_{alpha_1}')
     save_root.mkdir(parents=True, exist_ok=True)
 
-    irl_types = ['input', 'recon', 'label', 'BP', 'sinogram', '3d']
+    irl_types = ['input', 'recon', 'label', 'BP', 'sinogram', 'volume']
     for t in irl_types:
         if t == 'recon':
             save_root_f = save_root / t / 'progress'

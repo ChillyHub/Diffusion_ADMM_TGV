@@ -121,19 +121,19 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
 
 
     X = np.zeros(img_shape)
-    print("the shape of X:",X.shape) # the shape of X: (448, 1, 256, 256)
+    #print("the shape of X:",X.shape) # the shape of X: (448, 1, 256, 256)
     Dx = grad_op_x(X)
     del_v = Dx
-    print("the shape of del_v:",del_v.shape) # the shape of del_v: (448, 1, 256, 256, 2)
+    #print("the shape of del_v:",del_v.shape) # the shape of del_v: (448, 1, 256, 256, 2)
     del_z = Dx - del_v
-    print("the shape of del_z:",del_z.shape) # the shape of del_z: (448, 1, 256, 256, 2)
+    #print("the shape of del_z:",del_z.shape) # the shape of del_z: (448, 1, 256, 256, 2)
     Dv = grad_op_V(del_v)
     del_y = Dv
-    print("the shape of del_y:",del_y.shape) # the shape of del_y: (448, 1, 256, 256, 3)
+    #print("the shape of del_y:",del_y.shape) # the shape of del_y: (448, 1, 256, 256, 3)
     del_Uz = del_z - Dx + del_v
-    print("the shape of del_Uz:",del_Uz.shape) # the shape of del_Uz: (448, 1, 256, 256, 2)
+    #print("the shape of del_Uz:",del_Uz.shape) # the shape of del_Uz: (448, 1, 256, 256, 2)
     del_Uy = Dv - del_y
-    print("the shape of del_Uy:",del_Uy.shape) # the shape of del_Uy: (448, 1, 256, 256, 3)
+    #print("the shape of del_Uy:",del_Uy.shape) # the shape of del_Uy: (448, 1, 256, 256, 3)
     eps = 1e-10
 
     def _A(x):
@@ -206,11 +206,11 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
 
 
     def A_cg1(x):
-        print("the type of x:",type(x))
+        #print("the type of x:",type(x))
         return _AT(_A(x)) + 2 * rho_z * adj_grad_op_x_torch(grad_op_x_torch(x)) #.flatten() # 方程 6
 
     def A_cg2(v):
-        print("the type of v:",type(v))
+        #print("the type of v:",type(v))
         return 2 * rho_z * v + 2 * rho_y * adj_grad_op_V_torch(grad_op_V_torch(v)) #.flatten() 方程 9
 
 
@@ -243,11 +243,11 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
         for i in range(niter):
             b_cg1 = ATy + 2 * rho_z * adj_grad_op_x_torch(del_z + del_v + del_Uz) # 方程 7
             x = CG(A_cg1, b_cg1, x, n_inner=1) # 方程 8
-            print("del_y data type:",del_y.dtype)
+            #print("del_y data type:",del_y.dtype)
             EtYU = adj_grad_op_V_torch(del_y - del_Uy)
-            print("EtYU data type:", EtYU.dtype)
-            print("EtYU shape:", EtYU.shape)
-            print("grad_op_x_torch(x):",grad_op_x_torch(x).shape)
+            #print("EtYU data type:", EtYU.dtype)
+            #print("EtYU shape:", EtYU.shape)
+            #print("grad_op_x_torch(x):",grad_op_x_torch(x).shape)
             b_cg2 = 2 * rho_z * (grad_op_x_torch(x) - del_z - del_Uz) + 2 * rho_y * EtYU # 方程 10
             del_v = CG(A_cg2, b_cg2, del_v, n_inner=1) # 方程 11
             del_z = Z_step(grad_op_x_torch(x),del_v,del_Uz, del_z) #方程 12

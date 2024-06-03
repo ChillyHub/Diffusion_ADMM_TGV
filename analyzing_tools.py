@@ -3,6 +3,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 
 import os
+import re
 from PIL import Image
 
 import pandas as pd
@@ -11,9 +12,26 @@ import matplotlib.pyplot as plt
 
 def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='label/', volume_file_dir='volume/', volume_file_name='volume.npy', gt_file_name='ground_truth.npy'):
     """load reconstructed volume from npy file"""
+    def extract_number_from_filename(filename):  
+        match = re.search(r'\d+', filename)  
+        return int(match.group()) if match else float('inf')
+    
+    def sort_files_by_number_in_filename(directory):  
+        files = os.listdir(directory)  
+
+        files_with_numbers = [(extract_number_from_filename(filename), filename) for filename in files]  
+
+        sorted_files = sorted(files_with_numbers, key=lambda x: x[0])  
+
+        sorted_filenames = [filename for _, filename in sorted_files]  
+
+        return sorted_filenames  
+
     imgs = []
     names = []
-    for name in os.listdir(root_path + recon_file_dir):
+
+    name_list = sort_files_by_number_in_filename(root_path + recon_file_dir)
+    for name in name_list:
         try:
             img = Image.open(root_path + recon_file_dir + name)
             names.append(name)
@@ -111,23 +129,38 @@ def plot_comparison(reconstructed_volumes, titles, ground_truth, output_file=Non
 
     for i, volume in enumerate(reconstructed_volumes):
         # get the axial, sagittal, and coronal slices
-        axial_slice = volume[:, :, volume.shape[2] // 2]
-        sagittal_slice = volume[volume.shape[0] // 2, :, :]
-        coronal_slice = volume[:, volume.shape[1] // 2, :]
+        axial_slice = volume[volume.shape[0] // 2, :, :, :]
+        sagittal_slice = volume[:, :, volume.shape[2] // 2, :]
+        coronal_slice = volume[:, :, :, volume.shape[3] // 2]
 
         # calculate PSNR and SSIM for each slice
-        axial_gt = ground_truth[:, :, ground_truth.shape[2] // 2]
-        sagittal_gt = ground_truth[ground_truth.shape[0] // 2, :, :]
-        coronal_gt = ground_truth[:, ground_truth.shape[1] // 2, :]
+        axial_gt = ground_truth[ground_truth.shape[0] // 2, :, :, :]
+        sagittal_gt = ground_truth[:, :, ground_truth.shape[2] // 2, :]
+        coronal_gt = ground_truth[:, :, :, ground_truth.shape[3] // 2]
 
         psnr_axial = psnr(axial_gt, axial_slice, data_range=axial_gt.max() - axial_gt.min())
-        ssim_axial = ssim(axial_gt, axial_slice, data_range=axial_gt.max() - axial_gt.min())
+        ssim_axial = ssim(axial_gt, axial_slice, data_range=axial_gt.max() - axial_gt.min(), channel_axis=0)
 
         psnr_sagittal = psnr(sagittal_gt, sagittal_slice, data_range=sagittal_gt.max() - sagittal_gt.min())
-        ssim_sagittal = ssim(sagittal_gt, sagittal_slice, data_range=sagittal_gt.max() - sagittal_gt.min())
+        ssim_sagittal = ssim(sagittal_gt, sagittal_slice, data_range=sagittal_gt.max() - sagittal_gt.min(), channel_axis=1)
 
         psnr_coronal = psnr(coronal_gt, coronal_slice, data_range=coronal_gt.max() - coronal_gt.min())
-        ssim_coronal = ssim(coronal_gt, coronal_slice, data_range=coronal_gt.max() - coronal_gt.min())
+        ssim_coronal = ssim(coronal_gt, coronal_slice, data_range=coronal_gt.max() - coronal_gt.min(), channel_axis=1)
+
+        # change channel
+        # axial (c, x, y) -> (x, y)
+        axial_slice = axial_slice[0, :, :]
+        axial_gt = axial_gt[0, :, :]
+        # sagittal (z, c, y) -> (z, y) and double in dim 0
+        sagittal_slice = sagittal_slice[:, 0, :]
+        sagittal_gt = sagittal_gt[:, 0, :]
+        sagittal_slice = np.repeat(sagittal_slice, 2, axis=0)
+        sagittal_gt = np.repeat(sagittal_gt, 2, axis=0)
+        # coronal (z, c, x) -> (z, x) and double in dim 0
+        coronal_slice = coronal_slice[:, 0, :]
+        coronal_gt = coronal_gt[:, 0, :]
+        coronal_slice = np.repeat(coronal_slice, 2, axis=0)
+        coronal_gt = np.repeat(coronal_gt, 2, axis=0)
 
         slices = [axial_slice, sagittal_slice, coronal_slice]
         gts = [axial_gt, sagittal_gt, coronal_gt]
