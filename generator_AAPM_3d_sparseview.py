@@ -25,7 +25,7 @@ from tqdm import tqdm
 import argparse
 
 
-def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_1=1, p_lam=0.04):
+def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_1=1, p_lam=0.04, device=''):
     ###############################################
     # Configurations
     ###############################################
@@ -65,6 +65,12 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
     probability_flow = False
     snr = 0.16
     n_steps = 1
+
+    if device != '':
+        if device == '0':
+            config.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+        elif device == '1':
+            config.device = torch.device('cuda:1') if torch.cuda.is_available() else torch.device('cpu')
 
     batch_size = 12
     config.training.batch_size = batch_size
