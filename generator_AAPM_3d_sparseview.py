@@ -80,7 +80,7 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
     sigmas = mutils.get_sigmas(config)
     scaler = datasets.get_data_scaler(config)
     inverse_scaler = datasets.get_data_inverse_scaler(config)
-    score_model = mutils.create_model(config)  ## model
+    score_model = mutils.create_model(config, device=config.device)  ## model
 
     optimizer = get_optimizer(config, score_model.parameters())
     ema = ExponentialMovingAverage(score_model.parameters(),

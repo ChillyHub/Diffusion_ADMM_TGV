@@ -85,12 +85,15 @@ def get_ddpm_params(config):
   }
 
 
-def create_model(config):
+def create_model(config, device=None):
   """Create the score model."""
   model_name = config.model.name
   score_model = get_model(model_name)(config)
   score_model = score_model.to(config.device)
-  score_model = torch.nn.DataParallel(score_model)
+  if device is torch.device('cuda:1'):
+    score_model = torch.nn.DataParallel(score_model, device_ids=[1])
+  else:
+    score_model = torch.nn.DataParallel(score_model)
   return score_model
 
 
