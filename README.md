@@ -6,7 +6,7 @@ Make a conda environment and install dependencies
 ```bash
 conda create --name diffusion_env python=3.8
 conda activate diffusion_env
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install numpy
 conda install matplotlib
 conda install scikit-image
@@ -15,7 +15,6 @@ conda install ninja
 conda install tensorboard
 pip install sporco
 pip install ml_collections
-pip install ninja
 ```
 
 

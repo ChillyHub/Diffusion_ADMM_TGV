@@ -9,47 +9,16 @@ from utils import clear, batchfy
 
 
 def grad_x(x : Tensor):
-    dx = torch.roll(x, shifts=-1, dims=2) - x
-    dy = torch.roll(x, shifts=-1, dims=3) - x
-    dz = torch.roll(x, shifts=-1, dims=0) - x
-    return torch.stack((dx, dy, dz), dim=-1)
+    return torch.roll(x, shifts=-1, dims=0) - x
 
 def grad_x_trans(x : Tensor):
-    dx = torch.roll(x[..., 0], shifts=1, dims=2) - x[..., 0]
-    dy = torch.roll(x[..., 1], shifts=1, dims=3) - x[..., 1]
-    dz = torch.roll(x[..., 2], shifts=1, dims=0) - x[..., 2]
-    return dx + dy + dz
+    return torch.roll(x, shifts=1, dims=0) - x
 
 def grad_g(g : Tensor):
-    d1dx = torch.roll(g[..., 0], shifts=-1, dims=2) - g[..., 0]
-    d1dy = torch.roll(g[..., 0], shifts=-1, dims=3) - g[..., 0]
-    d1dz = torch.roll(g[..., 0], shifts=-1, dims=0) - g[..., 0]
-    d2dx = torch.roll(g[..., 1], shifts=-1, dims=2) - g[..., 1]
-    d2dy = torch.roll(g[..., 1], shifts=-1, dims=3) - g[..., 1]
-    d2dz = torch.roll(g[..., 1], shifts=-1, dims=0) - g[..., 1]
-    d3dx = torch.roll(g[..., 2], shifts=-1, dims=2) - g[..., 2]
-    d3dy = torch.roll(g[..., 2], shifts=-1, dims=3) - g[..., 2]
-    d3dz = torch.roll(g[..., 2], shifts=-1, dims=0) - g[..., 2]
-    return torch.stack((d1dx, d2dy, d3dz, (d1dy + d2dx) / 2, (d1dz + d3dx) / 2, (d2dz + d3dy) / 2), dim=-1)
+    return torch.roll(g, shifts=-1, dims=0) - g
 
 def grad_g_trans(g : Tensor):
-    d1dx, d2dy, d3dz, d1dy_d2dx, d1dz_d3dx, d2dz_d3dy = g[..., 0], g[..., 1], g[..., 2], g[..., 3], g[..., 4], g[..., 5]
-
-    g1 = (torch.roll(d1dx, shifts=1, dims=2) - d1dx +
-          (torch.roll(d1dy_d2dx, shifts=1, dims=3) - d1dy_d2dx) / 2 +
-          (torch.roll(d1dz_d3dx, shifts=1, dims=0) - d1dz_d3dx) / 2)
-
-    g2 = (torch.roll(d2dy, shifts=1, dims=3) - d2dy +
-          (torch.roll(d1dy_d2dx, shifts=1, dims=2) - d1dy_d2dx) / 2 +
-          (torch.roll(d2dz_d3dy, shifts=1, dims=0) - d2dz_d3dy) / 2)
-
-    g3 = (torch.roll(d3dz, shifts=1, dims=0) - d3dz +
-          (torch.roll(d1dz_d3dx, shifts=1, dims=2) - d1dz_d3dx) / 2 +
-          (torch.roll(d2dz_d3dy, shifts=1, dims=3) - d2dz_d3dy) / 2)
-
-    g_trans = torch.stack((g1, g2, g3), dim=-1)
-
-    return g_trans
+    return torch.roll(g, shifts=1, dims=0) - g
 
 
 def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
@@ -213,7 +182,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
     corrector_denoise_update_fn = get_update_fn(corrector_update_fn)
     mc_update_fn = get_ADMM_TV_fn()
 
-    def pc_radon(model, data, measurement=None):
+    def pc_radon(model, data, measurement=None, batch_size=12):
         with torch.no_grad():
             x = sde.prior_sampling(data.shape).to(data.device)
             ones = torch.ones_like(x).to(data.device)
@@ -232,7 +201,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
             for i in tqdm(range(sde.N)):
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU
-                x_batch = batchfy(x, 12)
+                x_batch = batchfy(x, batch_size)
                 # 2. Run PC step for each batch
                 x_agg = list()
                 for idx, x_batch_sing in enumerate(x_batch):

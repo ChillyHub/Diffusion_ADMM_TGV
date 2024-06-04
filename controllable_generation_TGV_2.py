@@ -284,7 +284,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
     mc_update_fn = get_ADMM_TV_fn()
 
 
-    def pc_radon(model, data, measurement=None):
+    def pc_radon(model, data, measurement=None, batch_size=12):
         with torch.no_grad():
             x = sde.prior_sampling(data.shape).to(data.device)
             # 传入一个形状和传入参数shape相同的张量，其中元素以标准正态分布采样，且该张量的所有元素都会乘以 ‘self.sigma_max=50'
@@ -304,7 +304,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
             for i in tqdm(range(sde.N)): # tqdm用于显示循环进度条
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU 将数据划分成适合 GPU 内存的小批次
-                x_batch = batchfy(x, 12)
+                x_batch = batchfy(x, batch_size)
                 # 2. Run PC step for each batch
                 x_agg = list() # 创建一个空列表
                 for idx, x_batch_sing in enumerate(x_batch): #第一个元素是索引值，第二个元素是可迭代对象的元素

@@ -4,8 +4,9 @@ from models.ema import ExponentialMovingAverage
 
 import numpy as np
 import controllable_generation_TV
-import controllable_generation_TGV_old
-import controllable_generation_TGV
+import controllable_generation_TGV_1
+import controllable_generation_TGV_2
+import controllable_generation_TGV_3
 
 from utils import restore_checkpoint, clear, batchfy, patient_wise_min_max, img_wise_min_max
 from pathlib import Path
@@ -25,7 +26,7 @@ from tqdm import tqdm
 import argparse
 
 
-def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_1=1, p_lam=0.04, device=''):
+def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_1=1, p_lam=0.04, device='', batch_size=12):
     ###############################################
     # Configurations
     ###############################################
@@ -151,8 +152,8 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
                                                                     lamb_1=lam,
                                                                     rho=rho_0)
         
-    elif metho == 'TGV':
-        pc_radon = controllable_generation_TGV.get_pc_radon_ADMM_TGV_vol(sde,
+    elif metho == 'TGV_3':
+        pc_radon = controllable_generation_TGV_3.get_pc_radon_ADMM_TGV_vol(sde,
                                                                         predictor, corrector,
                                                                         inverse_scaler,
                                                                         snr=snr,
@@ -171,8 +172,8 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
                                                                         alpha_0=alpha_0,
                                                                         alpha_1=alpha_1)
 
-    else:
-        pc_radon = controllable_generation_TGV_old.get_pc_radon_ADMM_TGV_vol(sde,
+    elif metho == 'TGV_2':
+        pc_radon = controllable_generation_TGV_2.get_pc_radon_ADMM_TGV_vol(sde,
                                                                         predictor, corrector,
                                                                         inverse_scaler,
                                                                         snr=snr,
@@ -190,6 +191,29 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
                                                                         rho_y=rho_1,
                                                                         alpha_0=alpha_0,
                                                                         alpha_1=alpha_1)
+        
+    elif metho == 'TGV_1':
+        pc_radon = controllable_generation_TGV_1.get_pc_radon_ADMM_TGV_vol(sde,
+                                                                        predictor, corrector,
+                                                                        inverse_scaler,
+                                                                        snr=snr,
+                                                                        n_steps=n_steps,
+                                                                        probability_flow=probability_flow,
+                                                                        continuous=config.training.continuous,
+                                                                        denoise=True,
+                                                                        radon=radon,
+                                                                        save_progress=True,
+                                                                        save_root=save_root,
+                                                                        final_consistency=True,
+                                                                        img_shape=img.shape,
+                                                                        lam=lam,
+                                                                        rho_z=rho_0,
+                                                                        rho_y=rho_1,
+                                                                        alpha_0=alpha_0,
+                                                                        alpha_1=alpha_1)
+        
+    else:
+        raise ValueError('Invalid method')
     
     sinogram = radon.A(img.to(config.device))
 
@@ -198,7 +222,7 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
 
     # Recon Image
     #x = pc_radon(score_model, scaler(img), measurement=sinogram)
-    x = pc_radon(score_model, scaler(img.to(config.device)), measurement=sinogram.to(config.device)) 
+    x = pc_radon(score_model, scaler(img.to(config.device)), measurement=sinogram.to(config.device), batch_size=batch_size) 
 
     img_cahce = x[-1].unsqueeze(0)
 
@@ -221,7 +245,7 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
 
     np.save(str(save_root / 'sinogram' / f'original_{count}.npy'), original_sinogram)
     np.save(str(save_root / 'sinogram' / f'recon_{count}.npy'), recon_sinogram)
-    np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x)
+    np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x.detach().cpu().numpy())
     np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), img)
 
 

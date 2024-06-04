@@ -190,7 +190,7 @@ def get_pc_radon_ADMM_TV_vol(sde, predictor, corrector, inverse_scaler, snr,
     corrector_denoise_update_fn = get_update_fn(corrector_update_fn)
     mc_update_fn = get_ADMM_TV_fn()
 
-    def pc_radon(model, data, measurement=None):
+    def pc_radon(model, data, measurement=None, batch_size=12):
         with torch.no_grad():
             x = sde.prior_sampling(data.shape).to(data.device)
 
@@ -200,7 +200,7 @@ def get_pc_radon_ADMM_TV_vol(sde, predictor, corrector, inverse_scaler, snr,
             for i in tqdm(range(sde.N)):
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU
-                x_batch = batchfy(x, 12)
+                x_batch = batchfy(x, batch_size)
                 # 2. Run PC step for each batch
                 x_agg = list()
                 for idx, x_batch_sing in enumerate(x_batch):
