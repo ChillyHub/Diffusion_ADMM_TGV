@@ -243,10 +243,13 @@ def run(p_metho='TGV', p_n_view=90, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha
     original_sinogram = torch.cat(label_sinogram, dim=0).detach().cpu().numpy()
     recon_sinogram = torch.cat(predicted_sinogram, dim=0).detach().cpu().numpy()
 
-    np.save(str(save_root / 'sinogram' / f'original_{count}.npy'), original_sinogram)
-    np.save(str(save_root / 'sinogram' / f'recon_{count}.npy'), recon_sinogram)
-    np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x.detach().cpu().numpy())
-    np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), img)
+    try:
+        np.save(str(save_root / 'sinogram' / f'original_{count}.npy'), original_sinogram)
+        np.save(str(save_root / 'sinogram' / f'recon_{count}.npy'), recon_sinogram)
+        np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x.detach().cpu().numpy())
+        np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), img)
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 if __name__ == '__main__':
