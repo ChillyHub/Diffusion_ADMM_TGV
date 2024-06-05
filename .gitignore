@@ -39,3 +39,5 @@ workdir/
 *.rar
 *.7z
 *.z
+
+*.ipynb
