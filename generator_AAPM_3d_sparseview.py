@@ -246,8 +246,8 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
     try:
         np.save(str(save_root / 'sinogram' / f'original_{count}.npy'), original_sinogram)
         np.save(str(save_root / 'sinogram' / f'recon_{count}.npy'), recon_sinogram)
-        np.save(str(save_root / 'volume' / f'volume_{count}.npy'), x.detach().cpu().numpy())
-        np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), img)
+        np.save(str(save_root / 'volume' / f'volume_{count}.npy'), clear(x))
+        np.save(str(save_root / 'volume' / f'ground_truth_{count}.npy'), clear(img))
     except Exception as e:
         print(f"Error: {e}")
 
