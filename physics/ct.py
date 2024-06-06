@@ -8,8 +8,8 @@ class CT():
             theta = np.linspace(0, 180, radon_view, endpoint=False)
             theta_all = np.linspace(0, 180, 180, endpoint=False)
         else:
-            theta = np.linspace(0, radon_view, 8, endpoint=False)
-            theta_all = np.linspace(0, radon_view, radon_view, endpoint=False)
+            theta = torch.arange(radon_view)
+            theta_all = torch.arange(radon_view)
 
         self.radon = Radon(img_width, theta, circle).to(device)
         self.radon_all = Radon(img_width, theta_all, circle).to(device)

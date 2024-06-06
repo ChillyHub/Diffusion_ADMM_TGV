@@ -9,6 +9,21 @@ from PIL import Image
 import pandas as pd
 import matplotlib.pyplot as plt
 
+def normalize_image(image):
+    """
+    Normalize image data to the range 0-1.
+    """
+    if image.dtype == np.uint8:
+        image = image / 255.0
+    elif image.dtype == np.uint16:
+        image = image / 65535.0
+    elif image.dtype == np.float32 or image.dtype == np.float64:
+        if image.max() > 1.0:
+            image = image / image.max()
+    else:
+        raise ValueError("Unsupported image data type: {}".format(image.dtype))
+
+    return image
 
 def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='label/', volume_file_dir='volume/', volume_file_name='volume.npy', gt_file_name='ground_truth.npy'):
     """load reconstructed volume from npy file"""
@@ -45,7 +60,7 @@ def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='
         img = np.expand_dims(img, axis=0)
         imgs.append(img)
 
-    imgs = np.array(imgs)
+    imgs = np.array(normalize_image(imgs))
 
     labels = []
     for name in names:
@@ -61,25 +76,25 @@ def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='
         label = np.expand_dims(label, axis=0)
         labels.append(label)
     
-    labels = np.array(labels)
+    labels = np.array(normalize_image(labels))
 
     # save volume
     if not os.path.exists(root_path + volume_file_dir):
         os.makedirs(root_path + volume_file_dir)
 
-    np.save(root_path + volume_file_dir + volume_file_name, imgs)
-    np.save(root_path + volume_file_dir + gt_file_name, labels)
+    np.save(root_path + volume_file_dir + volume_file_name, imgs.squeeze())
+    np.save(root_path + volume_file_dir + gt_file_name, labels.squeeze())
 
 def load_volume(path, reconstruct_file_name, reference_file_name):
     """load reconstructed and reference volumes from npy files"""
-    reconstructed_volume = np.load(path + reconstruct_file_name)
-    reference_volume = np.load(path + reference_file_name)
+    reconstructed_volume = normalize_image(np.load(path + reconstruct_file_name).squeeze())
+    reference_volume = normalize_image(np.load(path + reference_file_name).squeeze())
     return reconstructed_volume, reference_volume
 
-def calculate_metrics(slice_reconstructed, slice_reference, channel_axis):
+def calculate_metrics(slice_reconstructed, slice_reference):
     """calculate PSNR and SSIM for a single slice"""
-    psnr_value = psnr(slice_reference, slice_reconstructed, data_range=slice_reference.max() - slice_reference.min())
-    ssim_value = ssim(slice_reference, slice_reconstructed, data_range=slice_reference.max() - slice_reference.min(), channel_axis=channel_axis)
+    psnr_value = psnr(slice_reference, slice_reconstructed, data_range=1.0)
+    ssim_value = ssim(slice_reference, slice_reconstructed, data_range=1.0)
     return psnr_value, ssim_value
 
 def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
@@ -88,29 +103,29 @@ def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
     psnr_coronal, ssim_coronal = [], []
     psnr_sagittal, ssim_sagittal = [], []
 
-    # volume shape is (z, c, x, y)
+    # volume shape is (z, x, y)
 
     # axial slices
     for z in range(volume_reconstructed.shape[0]):
-        slice_reconstructed = volume_reconstructed[z, :, :, :]
-        slice_reference = volume_reference[z, :, :, :]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference, 0)
+        slice_reconstructed = volume_reconstructed[z, :, :]
+        slice_reference = volume_reference[z, :, :]
+        p, s = calculate_metrics(slice_reconstructed, slice_reference)
         psnr_axial.append(p)
         ssim_axial.append(s)
 
     # coronal slices
-    for x in range(volume_reconstructed.shape[2]):
-        slice_reconstructed = volume_reconstructed[:, :, x, :]
-        slice_reference = volume_reference[:, :, x, :]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference, 1)
+    for x in range(volume_reconstructed.shape[1]):
+        slice_reconstructed = volume_reconstructed[:, x, :]
+        slice_reference = volume_reference[:, x, :]
+        p, s = calculate_metrics(slice_reconstructed, slice_reference)
         psnr_coronal.append(p)
         ssim_coronal.append(s)
 
     # sagittal slices
-    for y in range(volume_reconstructed.shape[3]):
-        slice_reconstructed = volume_reconstructed[:, :, :, y]
-        slice_reference = volume_reference[:, :, :, y]
-        p, s = calculate_metrics(slice_reconstructed, slice_reference, 1)
+    for y in range(volume_reconstructed.shape[2]):
+        slice_reconstructed = volume_reconstructed[:, :, y]
+        slice_reference = volume_reference[:, :, y]
+        p, s = calculate_metrics(slice_reconstructed, slice_reference)
         psnr_sagittal.append(p)
         ssim_sagittal.append(s)
 
@@ -129,34 +144,23 @@ def plot_comparison(reconstructed_volumes, titles, ground_truth, output_file=Non
 
     for i, volume in enumerate(reconstructed_volumes):
         # get the axial, sagittal, and coronal slices
-        axial_slice = volume[volume.shape[0] // 2, :, :, :]
-        sagittal_slice = volume[:, :, volume.shape[2] // 2, :]
-        coronal_slice = volume[:, :, :, volume.shape[3] // 2]
+        axial_slice = volume[volume.shape[0] // 2, :, :]
+        sagittal_slice = volume[:, volume.shape[1] // 2, :]
+        coronal_slice = volume[:, :, volume.shape[2] // 2]
 
         # calculate PSNR and SSIM for each slice
-        axial_gt = ground_truth[ground_truth.shape[0] // 2, :, :, :]
-        sagittal_gt = ground_truth[:, :, ground_truth.shape[2] // 2, :]
-        coronal_gt = ground_truth[:, :, :, ground_truth.shape[3] // 2]
+        axial_gt = ground_truth[ground_truth.shape[0] // 2, :, :]
+        sagittal_gt = ground_truth[:, ground_truth.shape[1] // 2, :]
+        coronal_gt = ground_truth[:, :, ground_truth.shape[2] // 2]
 
-        psnr_axial = psnr(axial_gt, axial_slice, data_range=axial_gt.max() - axial_gt.min())
-        ssim_axial = ssim(axial_gt, axial_slice, data_range=axial_gt.max() - axial_gt.min(), channel_axis=0)
+        psnr_axial = psnr(axial_gt, axial_slice, data_range=1.0)
+        ssim_axial = ssim(axial_gt, axial_slice, data_range=1.0)
 
-        psnr_sagittal = psnr(sagittal_gt, sagittal_slice, data_range=sagittal_gt.max() - sagittal_gt.min())
-        ssim_sagittal = ssim(sagittal_gt, sagittal_slice, data_range=sagittal_gt.max() - sagittal_gt.min(), channel_axis=1)
+        psnr_sagittal = psnr(sagittal_gt, sagittal_slice, data_range=1.0)
+        ssim_sagittal = ssim(sagittal_gt, sagittal_slice, data_range=1.0)
 
-        psnr_coronal = psnr(coronal_gt, coronal_slice, data_range=coronal_gt.max() - coronal_gt.min())
-        ssim_coronal = ssim(coronal_gt, coronal_slice, data_range=coronal_gt.max() - coronal_gt.min(), channel_axis=1)
-
-        # change channel
-        # axial (c, x, y) -> (x, y)
-        axial_slice = axial_slice[0, :, :]
-        axial_gt = axial_gt[0, :, :]
-        # sagittal (z, c, y) -> (z, y)
-        sagittal_slice = sagittal_slice[:, 0, :]
-        sagittal_gt = sagittal_gt[:, 0, :]
-        # coronal (z, c, x) -> (z, x)
-        coronal_slice = coronal_slice[:, 0, :]
-        coronal_gt = coronal_gt[:, 0, :]
+        psnr_coronal = psnr(coronal_gt, coronal_slice, data_range=1.0)
+        ssim_coronal = ssim(coronal_gt, coronal_slice, data_range=1.0)
 
         # transfrom to 256x256
         axial_slice = np.array(Image.fromarray(axial_slice).resize((256, 256)))
