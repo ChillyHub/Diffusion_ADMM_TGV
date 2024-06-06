@@ -58,4 +58,4 @@ python generator_AAPM_3d_sparseview.py
 
 ### Analyzing result
 
-Look file analyzing_tool.py
+Look file compare_model.ipynb

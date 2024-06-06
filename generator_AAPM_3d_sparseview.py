@@ -187,8 +187,8 @@ def run(p_metho='TGV', p_n_view=8, p_rho_0=10, p_rho_1=10, p_alpha_0=1, p_alpha_
                                                                         final_consistency=True,
                                                                         img_shape=img.shape,
                                                                         lam=lam,
-                                                                        rho_z=rho_0,
-                                                                        rho_y=rho_1,
+                                                                        rho_0=rho_0,
+                                                                        rho_1=rho_1,
                                                                         alpha_0=alpha_0,
                                                                         alpha_1=alpha_1)
         

@@ -41,3 +41,4 @@ workdir/
 *.z
 
 *.ipynb
+!compare_model.ipynb

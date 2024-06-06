@@ -122,7 +122,7 @@ def extract_slices_and_evaluate(volume_reconstructed, volume_reference):
 
 def plot_comparison(reconstructed_volumes, titles, ground_truth, output_file=None, simple=True, inset=False):
     """generate a plot comparing the reconstructed and ground truth volumes along the three axes"""
-    fig, axes = plt.subplots(3, len(reconstructed_volumes) + 1, figsize=(15, 9))
+    fig, axes = plt.subplots(3, len(reconstructed_volumes) + 1, figsize=((len(reconstructed_volumes) + 1) * 3, 9))
 
     str_psnr = '' if simple else 'PSNR:'
     str_ssim = '' if simple else 'SSIM:'
@@ -174,38 +174,42 @@ def plot_comparison(reconstructed_volumes, titles, ground_truth, output_file=Non
 
         for j in range(3):
             axes[j, i].imshow(slices[j], cmap='gray')
-            axes[j, i].set_title(f'{titles[i]}\n{str_psnr} {psnr_values[j]:.2f} / {str_ssim} {ssim_values[j]:.3f}')
+            #axes[j, i].set_title(f'{titles[i]}\n{str_psnr} {psnr_values[j]:.2f} / {str_ssim} {ssim_values[j]:.3f}')
+            axes[j, i].text(5, 30, f'{titles[i]}\n{str_psnr} {psnr_values[j]:.2f} / {str_ssim} {ssim_values[j]:.3f}', fontdict={'color': 'white'})
             axes[j, i].axis('off')
 
             if inset:
                 # add inset with zoomed-in region
-                inset_ax = axes[j, i].inset_axes([0.65, 0.05, 0.3, 0.3])  # [x, y, width, height]
-                inset_ax.imshow(slices[j][30:70, 30:70], cmap='gray')
+                inset_ax = axes[j, i].inset_axes([0.7, 0.0, 0.3, 0.3])  # [x, y, width, height]
+                inset_ax.add_patch(plt.Rectangle((0, 0), 80, 80, edgecolor='yellow', facecolor='none', lw=2))
+                inset_ax.imshow(slices[j][70:110, 70:110], cmap='gray')
                 inset_ax.set_xlim(0, 40)
                 inset_ax.set_ylim(40, 0)
                 inset_ax.axis('off')
 
                 # add rectangle around zoomed-in region
-                axes[j, i].add_patch(plt.Rectangle((30, 30), 40, 40, edgecolor='yellow', facecolor='none', lw=2))
+                axes[j, i].add_patch(plt.Rectangle((70, 70), 40, 40, edgecolor='yellow', facecolor='none', lw=1))
 
     # plot the ground truth
     for j in range(3):
         axes[j, -1].imshow(gts[j], cmap='gray')
-        axes[j, -1].set_title('Ground Truth')
+        axes[j, -1].text(5, 30, 'Ground truth', fontdict={'color': 'white'})
         axes[j, -1].axis('off')
 
         if inset:
             # add inset with zoomed-in region
-            inset_ax = axes[j, -1].inset_axes([0.65, 0.05, 0.3, 0.3])  # [x, y, width, height]
-            inset_ax.imshow(gts[j][30:70, 30:70], cmap='gray')
+            inset_ax = axes[j, -1].inset_axes([0.7, 0.0, 0.3, 0.3])  # [x, y, width, height]
+            inset_ax.add_patch(plt.Rectangle((0, 0), 80, 80, edgecolor='yellow', facecolor='none', lw=2))
+            inset_ax.imshow(gts[j][70:110, 70:110], cmap='gray')
             inset_ax.set_xlim(0, 40)
             inset_ax.set_ylim(40, 0)
             inset_ax.axis('off')
 
             # add rectangle around zoomed-in region
-            axes[j, -1].add_patch(plt.Rectangle((30, 30), 40, 40, edgecolor='yellow', facecolor='none', lw=2))
+            axes[j, -1].add_patch(plt.Rectangle((70, 70), 40, 40, edgecolor='yellow', facecolor='none', lw=1))
 
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.0, hspace=0.0)
 
     if output_file:
         plt.savefig(output_file)
@@ -255,9 +259,10 @@ def flatten_dicts_to_df(dict_list, name_list):
     assert len(dict_list) == len(name_list), 'Length of dict_list and name_list must be equal'
 
     list_format_dict = {'Method': name_list}
-    for k, v in dict_list.items():
-        if k not in list_format_dict:
-            list_format_dict[k] = []
-        list_format_dict[k].extend(v)
+    for d in dict_list:
+        for k, v in d.items():
+            if k not in list_format_dict:
+                list_format_dict[k] = []
+            list_format_dict[k].append(v)
     return list_format_dict
 

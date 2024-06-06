@@ -71,21 +71,13 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
                                             snr=snr,
                                             n_steps=n_steps)
     
+
+    g : Tensor = torch.zeros(img_shape)
+    z : Tensor = torch.zeros(img_shape)
+    y : Tensor = torch.zeros(img_shape)
+    u_z : Tensor = torch.zeros(img_shape)
+    u_y : Tensor = torch.zeros(img_shape)
     eps = 1e-10
-
-    x : Tensor = torch.zeros(img_shape)
-
-    dx : Tensor = grad_x(x)
-    
-    g : Tensor = dx
-
-    dg : Tensor = grad_g(g)
-
-    z : Tensor = dx - g
-    y : Tensor = dg
-
-    u_z : Tensor = z - dx + g
-    u_y : Tensor = dg - y
 
     def _A(x):
         return radon.A(x)
@@ -161,11 +153,12 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
     
     def CS_routine(x : Tensor, ATb, niter):
         nonlocal g, z, y, u_z, u_y
-        g = g.to(x.device)
-        z = z.to(x.device)
-        y = y.to(x.device)
-        u_z = u_z.to(x.device)
-        u_y = u_y.to(x.device)
+        if g.device != x.device:
+            g = g.to(x.device)
+            z = z.to(x.device)
+            y = y.to(x.device)
+            u_z = u_z.to(x.device)
+            u_y = u_y.to(x.device)
 
         for i in range(niter):
             # x step
@@ -216,19 +209,10 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
     def pc_radon(model, data, measurement=None, batch_size=12):
         with torch.no_grad():
             x = sde.prior_sampling(data.shape).to(data.device)
+            
             ones = torch.ones_like(x).to(data.device)
             norm_const = _AT(_A(ones))
             timesteps = torch.linspace(sde.T, eps, sde.N) 
-
-            nonlocal g, z, y, u_z, u_y
-            dx = grad_x(x)
-            g = dx
-            dg = grad_g(g)
-            z = dx - g
-            y = dg
-            u_z = z - dx + g
-            u_y = dg - y
-
             for i in tqdm(range(sde.N)):
                 t = timesteps[i]
                 # 1. batchify into sizes that fit into the GPU

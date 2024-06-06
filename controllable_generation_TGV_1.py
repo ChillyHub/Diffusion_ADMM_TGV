@@ -40,21 +40,13 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
                                             snr=snr,
                                             n_steps=n_steps)
     
-    eps = 1e-10
-
-    x : Tensor = torch.zeros(img_shape)
-
-    dx : Tensor = grad_x(x)
     
-    g : Tensor = dx
-
-    dg : Tensor = grad_g(g)
-
-    z : Tensor = dx - g
-    y : Tensor = dg
-
-    u_z : Tensor = z - dx + g
-    u_y : Tensor = dg - y
+    g : Tensor = torch.zeros(img_shape)
+    z : Tensor = torch.zeros(img_shape)
+    y : Tensor = torch.zeros(img_shape)
+    u_z : Tensor = torch.zeros(img_shape)
+    u_y : Tensor = torch.zeros(img_shape)
+    eps = 1e-10
 
     def _A(x):
         return radon.A(x)
@@ -76,13 +68,13 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
         assert dx.shape == v.shape == u_z.shape == z.shape
         # flat
         original_shape = dx.shape
-        Dx_flat = dx.reshape(-1, 256*256*3)
-        del_v_flat = v.reshape(-1, 256*256*3)
-        del_Uz_flat = u_z.reshape(-1, 256*256*3)
+        Dx_flat = dx.reshape(-1, 256*256*1)
+        del_v_flat = v.reshape(-1, 256*256*1)
+        del_Uz_flat = u_z.reshape(-1, 256*256*1)
         # compute
-        a = (Dx_flat - del_v_flat - del_Uz_flat).reshape(-1, 3)
+        a = (Dx_flat - del_v_flat - del_Uz_flat).reshape(-1, 1)
         coef = torch.maximum(1 - (2 * lam * alpha_1 / rho_0) / torch.norm(a, dim=1, keepdim=True), torch.tensor(0.0))
-        result_flat = (coef * a).reshape(-1, 256*256*3)
+        result_flat = (coef * a).reshape(-1, 256*256*1)
         # reshape
         result = result_flat.reshape(original_shape)
         return result
@@ -96,12 +88,12 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
         assert dg.shape == u_y.shape == y.shape
         # flat
         original_shape = dg.shape
-        dg_flat = dg.reshape(-1, 256*256*6)
-        del_u_y_flat = u_y.reshape(-1, 256*256*6)
+        dg_flat = dg.reshape(-1, 256*256*1)
+        del_u_y_flat = u_y.reshape(-1, 256*256*1)
         # compute
-        a = (dg_flat + del_u_y_flat).reshape(-1, 6)
+        a = (dg_flat + del_u_y_flat).reshape(-1, 1)
         coef = torch.maximum(1 - (2 * lam * alpha_0 / rho_1) / torch.norm(a, dim=1, keepdim=True), torch.tensor(0.0))
-        result_flat = (coef * a).reshape(-1, 256*256*6)
+        result_flat = (coef * a).reshape(-1, 256*256*1)
         # reshape
         result = result_flat.reshape(original_shape)
         return result
