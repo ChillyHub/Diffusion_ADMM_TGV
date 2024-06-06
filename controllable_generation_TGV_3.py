@@ -72,11 +72,14 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
                                             n_steps=n_steps)
     
 
-    g : Tensor = torch.zeros(img_shape)
-    z : Tensor = torch.zeros(img_shape)
-    y : Tensor = torch.zeros(img_shape)
-    u_z : Tensor = torch.zeros(img_shape)
-    u_y : Tensor = torch.zeros(img_shape)
+    x_0 : Tensor = torch.zeros(img_shape)
+    d_x = grad_x(x_0)
+    g : Tensor = d_x
+    z : Tensor = d_x - g
+    d_g = grad_g(g)
+    y : Tensor = d_g
+    u_z : Tensor = z - d_x + g
+    u_y : Tensor = d_g - y
     eps = 1e-10
 
     def _A(x):

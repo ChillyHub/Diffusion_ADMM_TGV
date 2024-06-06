@@ -57,12 +57,15 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
                                             snr=snr,
                                             n_steps=n_steps)
 
-
-    del_v : Tensor = torch.zeros(img_shape)
-    del_z : Tensor = torch.zeros(img_shape)
-    del_y : Tensor = torch.zeros(img_shape)
-    del_Uz : Tensor = torch.zeros(img_shape)
-    del_Uy : Tensor = torch.zeros(img_shape)
+    
+    x_0 : Tensor = torch.zeros(img_shape)
+    Dx = grad_x(x_0)
+    del_v : Tensor = Dx
+    del_z : Tensor = Dx - del_v
+    Dv = grad_v(del_v)
+    del_y : Tensor = Dv
+    del_Uz : Tensor = del_z - Dx + del_v
+    del_Uy : Tensor = Dv - del_y
     eps = 1e-10
 
     def _A(x):
@@ -184,7 +187,7 @@ def get_pc_radon_ADMM_TGV_vol(sde, predictor, corrector, inverse_scaler, snr,
         def ADMM_TV_fn(x, measurement=None):
             with torch.no_grad():
                 ATy = _AT(measurement)
-                x, x_mean = CS_routine(x, ATy, niter=1) #方程 6-15
+                x, x_mean = CS_routine(x, ATy, niter=1)
                 return x, x_mean
         return ADMM_TV_fn
 
