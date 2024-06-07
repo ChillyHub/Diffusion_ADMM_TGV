@@ -60,7 +60,7 @@ def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='
         img = np.expand_dims(img, axis=0)
         imgs.append(img)
 
-    imgs = np.array(normalize_image(imgs))
+    imgs = normalize_image(np.array(imgs))
 
     labels = []
     for name in names:
@@ -76,7 +76,7 @@ def load_recon_gt_to_volume(root_path, recon_file_dir='recon/', label_file_dir='
         label = np.expand_dims(label, axis=0)
         labels.append(label)
     
-    labels = np.array(normalize_image(labels))
+    labels = normalize_image(np.array(labels))
 
     # save volume
     if not os.path.exists(root_path + volume_file_dir):
