@@ -4,8 +4,9 @@
 ### Requirement
 Make a conda environment and install dependencies
 ```bash
-conda create --name diffusion_env python=3.8
-conda activate diffusion_env
+sudo apt install g++
+conda create --name diff_tgv_env python=3.8
+conda activate diff_tgv_env
 conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 conda install numpy
 conda install matplotlib
@@ -46,16 +47,17 @@ wget -O exp/ve/AAPM_256_ncsnpp_continuous/checkpoint_185.pth https://www.dropbox
 
 ```bash
 conda activate diff_tgv_env
-python experience.py
+python experience.py --method <method_name> --view <num_view>
 ```
 
-or set parameter self
+or set parameters self
 
 ```bash
 conda activate diff_tgv_env
-python generator_AAPM_3d_sparseview.py
+python generator_AAPM_3d_sparseview.py <your parameters>
+python generator_AAPM_3d_limitedangle.py <your parameters>
 ```
 
-### Analyzing result
+### Analyzing results
 
-Look file compare_model.ipynb
+Look file [compare_model.ipynb](./compare_model.ipynb)
